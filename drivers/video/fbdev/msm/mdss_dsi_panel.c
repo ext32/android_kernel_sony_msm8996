@@ -40,7 +40,7 @@
 #ifdef CONFIG_POWERSUSPEND
 #include <linux/powersuspend.h>
 
-#ifdef CONFIG_FLICKER_FREE
+#ifdef CONFIG_FB_MSM_MDSS_FLICKER_FREE
 #include "flicker_free.h"
 #endif
 
@@ -937,7 +937,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
-#ifdef CONFIG_FLICKER_FREE
+#ifdef CONFIG_FB_MSM_MDSS_FLICKER_FREE
 	/* Remap backlight value prior to HBM */
 	if (bl_level != 0)
 		bl_level = mdss_panel_calc_backlight(bl_level);
@@ -2755,6 +2755,12 @@ static int mdss_dsi_panel_timing_from_dt(struct device_node *np,
 				np->name, &pt->timing);
 #endif /* CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL */
 	}
+
+#ifdef CONFIG_FB_MSM_MDSS_FLICKER_FREE
+	rc = of_property_read_u32(np, "qcom,mdss-dsi-panel-elvss-off-thresh", &tmp);
+	if (!rc)
+		mdss_panel_set_elvss_off_threshold(tmp);
+#endif
 
 	return 0;
 }
