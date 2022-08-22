@@ -613,6 +613,7 @@ static const struct freq_tbl ftbl_axi_clk_src[] = {
 	F(171428571, P_GPLL0, 3.5, 0, 0),
 	F(200000000, P_GPLL0, 3, 0, 0),
 	F(320000000, P_MMPLL0, 2.5, 0, 0),
+	F(384000000, P_MMPLL4, 2.5, 0, 0),
 	F(405000000, P_MMPLL1, 2, 0, 0),
 	{ }
 };
