@@ -1135,6 +1135,10 @@ static void msm_pcm_routing_build_matrix(int fedai_id, int sess_type,
 		MSM_AFE_PORT_TYPE_RX : MSM_AFE_PORT_TYPE_TX);
 
 	for (i = 0; i < MSM_BACKEND_DAI_MAX; i++) {
+
+		if (test_bit(fedai_id, &msm_bedais[i].fe_sessions[0]))
+			msm_bedais[i].passthr_mode[fedai_id] = LEGACY_PCM;
+
 		if (!is_be_dai_extproc(i) &&
 		   (afe_get_port_type(msm_bedais[i].port_id) == port_type) &&
 		   (msm_bedais[i].active) &&
