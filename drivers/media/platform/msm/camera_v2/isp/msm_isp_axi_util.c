@@ -3599,7 +3599,7 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 	enum msm_vfe_input_src frame_src = 0;
 	int k;
 	uint32_t wm_mask = 0;
-	int is_vfe48_660 = 0, vfe_idx;
+	int vfe_idx;
 	uint32_t pingpong_bit = 0;
 	uint32_t do_drop_frame;
 
@@ -3622,11 +3622,6 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 	frame_src = SRC_TO_INTF(stream_info->stream_src);
 	pingpong_status = vfe_dev->hw_info->
 		vfe_ops.axi_ops.get_pingpong_status(vfe_dev);
-
-	/* Force no drop_reconfig on SDM630/660 for dual-vfe issue */
-	is_vfe48_660 = msm_vfe_is_vfe48_660(vfe_dev);
-	if (is_vfe48_660)
-		vfe_dev->isp_page->drop_reconfig = 0;
 
 	/* As MCT is still processing it, need to drop the additional requests*/
 	if (vfe_dev->isp_page->drop_reconfig && do_drop_frame) {
@@ -3654,8 +3649,7 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 		vfe_dev->isp_page->drop_reconfig = 1;
 		do_drop_frame = 1;
 		return 0;
-	} else if (!is_vfe48_660 &&
-		   (vfe_dev->axi_data.src_info[frame_src].active) &&
+	} else if ((vfe_dev->axi_data.src_info[frame_src].active) &&
 			((frame_id ==
 			vfe_dev->axi_data.src_info[frame_src].frame_id) ||
 			(frame_id == vfe_dev->irq_sof_id)) &&
@@ -3668,11 +3662,7 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].active);
 		return 0;
-
-	}
-
-	if ((vfe_dev->axi_data.src_info[frame_src].active && (frame_id !=
-
+	} else if ((vfe_dev->axi_data.src_info[frame_src].active && (frame_id !=
 		vfe_dev->axi_data.src_info[frame_src].frame_id + vfe_dev->
 		axi_data.src_info[frame_src].sof_counter_step)) ||
 		((!vfe_dev->axi_data.src_info[frame_src].active))) {
