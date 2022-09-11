@@ -8477,7 +8477,7 @@ set:
 unlock:
 	mutex_unlock(&event->mmap_mutex);
 	if (output_event)
-		mutex_unlock(&output_event->mmap_mutex)
+		mutex_unlock(&output_event->mmap_mutex);
 
 out:
 	return ret;
