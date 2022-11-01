@@ -406,6 +406,11 @@ static inline struct bpf_prog *bpf_prog_get_type_path(const char *name,
 {
 	return ERR_PTR(-EOPNOTSUPP);
 }
+static inline int bpf_obj_get_user(const char __user *pathname)
+{
+	return -EOPNOTSUPP;
+}
+
 #endif /* CONFIG_BPF_SYSCALL */
 
 /* verifier prototypes for helper functions called from eBPF programs */
