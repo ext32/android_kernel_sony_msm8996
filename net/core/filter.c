@@ -1337,15 +1337,22 @@ int sk_reuseport_attach_bpf(u32 ufd, struct sock *sk)
 }
 
 #define BPF_RECOMPUTE_CSUM(flags)	((flags) & 1)
-#define BPF_LDST_LEN			16U
+struct bpf_scratchpad {
+	union {
+		__be32 diff[MAX_BPF_STACK / sizeof(__be32)];
+		u8     buff[MAX_BPF_STACK];
+	};
+};
+
+static DEFINE_PER_CPU(struct bpf_scratchpad, bpf_sp);
 
 static u64 bpf_skb_store_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 flags)
 {
+	struct bpf_scratchpad *sp = this_cpu_ptr(&bpf_sp);
 	struct sk_buff *skb = (struct sk_buff *) (long) r1;
 	int offset = (int) r2;
 	void *from = (void *) (long) r3;
 	unsigned int len = (unsigned int) r4;
-	char buf[BPF_LDST_LEN];
 	void *ptr;
 
 	/* bpf verifier guarantees that:
@@ -1356,12 +1363,12 @@ static u64 bpf_skb_store_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 flags)
 	 *
 	 * so check for invalid 'offset' and too large 'len'
 	 */
-	if (unlikely((u32) offset > 0xffff || len > sizeof(buf)))
+	if (unlikely((u32) offset > 0xffff || len > sizeof(sp->buff)))
 		return -EFAULT;
 	if (unlikely(skb_try_make_writable(skb, offset + len)))
 		return -EFAULT;
 
-	ptr = skb_header_pointer(skb, offset, len, buf);
+	ptr = skb_header_pointer(skb, offset, len, sp->buff);
 	if (unlikely(!ptr))
 		return -EFAULT;
 
@@ -1370,7 +1377,7 @@ static u64 bpf_skb_store_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 flags)
 
 	memcpy(ptr, from, len);
 
-	if (ptr == buf)
+	if (ptr == sp->buff)
 		/* skb_store_bits cannot return -EFAULT here */
 		skb_store_bits(skb, offset, ptr, len);
 
@@ -1398,7 +1405,7 @@ static u64 bpf_skb_load_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
 	unsigned int len = (unsigned int) r4;
 	void *ptr;
 
-	if (unlikely((u32) offset > 0xffff || len > BPF_LDST_LEN))
+	if (unlikely((u32) offset > 0xffff || len > MAX_BPF_STACK))
 		return -EFAULT;
 
 	ptr = skb_header_pointer(skb, offset, len, to);
