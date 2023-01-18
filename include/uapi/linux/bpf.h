@@ -270,8 +270,105 @@ enum bpf_func_id {
 	 */
 	BPF_FUNC_perf_event_output,
 	BPF_FUNC_skb_load_bytes,
+
+	/**
+	 * int bpf_get_numa_node_id()
+	 *     Return: Id of current NUMA node.
+	 */
+	BPF_FUNC_get_numa_node_id,
+
+	/**
+	 * int bpf_skb_change_head()
+	 *     Grows headroom of skb and adjusts MAC header offset accordingly.
+	 *     Will extends/reallocae as required automatically.
+	 *     May change skb data pointer and will thus invalidate any check
+	 *     performed for direct packet access.
+	 *     @skb: pointer to skb
+	 *     @len: length of header to be pushed in front
+	 *     @flags: Flags (unused for now)
+	 *     Return: 0 on success or negative error
+	 */
+	BPF_FUNC_skb_change_head,
+
+	/**
+	 * int bpf_xdp_adjust_head(xdp_md, delta)
+	 *     Adjust the xdp_md.data by delta
+	 *     @xdp_md: pointer to xdp_md
+	 *     @delta: An positive/negative integer to be added to xdp_md.data
+	 *     Return: 0 on success or negative on error
+	 */
+	BPF_FUNC_xdp_adjust_head,
+
+	/**
+	 * int bpf_probe_read_str(void *dst, int size, const void *unsafe_ptr)
+	 *     Copy a NUL terminated string from unsafe address. In case the string
+	 *     length is smaller than size, the target is not padded with further NUL
+	 *     bytes. In case the string length is larger than size, just count-1
+	 *     bytes are copied and the last byte is set to NUL.
+	 *     @dst: destination address
+	 *     @size: maximum number of bytes to copy, including the trailing NUL
+	 *     @unsafe_ptr: unsafe address
+	 *     Return:
+	 *       > 0 length of the string including the trailing NUL on success
+	 *       < 0 error
+	 */
+	BPF_FUNC_probe_read_str,
+
+	/**
+	 * u64 bpf_bpf_get_socket_cookie(skb)
+	 *     Get the cookie for the socket stored inside sk_buff.
+	 *     @skb: pointer to skb
+	 *     Return: 8 Bytes non-decreasing number on success or 0 if the socket
+	 *     field is missing inside sk_buff
+	 */
+	BPF_FUNC_get_socket_cookie,
+
+	/**
+	 * u32 bpf_get_socket_uid(skb)
+	 *     Get the owner uid of the socket stored inside sk_buff.
+	 *     @skb: pointer to skb
+	 *     Return: uid of the socket owner on success or 0 if the socket pointer
+	 *     inside sk_buff is NULL
+	 */
+	BPF_FUNC_get_socket_uid,
 	__BPF_FUNC_MAX_ID,
 };
+
+/* All flags used by eBPF helper functions, placed here. */
+/* BPF_FUNC_skb_store_bytes flags. */
+#define BPF_F_RECOMPUTE_CSUM		(1ULL << 0)
+#define BPF_F_INVALIDATE_HASH		(1ULL << 1)
+
+/* BPF_FUNC_l3_csum_replace and BPF_FUNC_l4_csum_replace flags.
+ * First 4 bits are for passing the header field size.
+ */
+#define BPF_F_HDR_FIELD_MASK		0xfULL
+
+/* BPF_FUNC_l4_csum_replace flags. */
+#define BPF_F_PSEUDO_HDR		(1ULL << 4)
+#define BPF_F_MARK_MANGLED_0		(1ULL << 5)
+
+/* BPF_FUNC_clone_redirect and BPF_FUNC_redirect flags. */
+#define BPF_F_INGRESS			(1ULL << 0)
+
+/* BPF_FUNC_skb_set_tunnel_key and BPF_FUNC_skb_get_tunnel_key flags. */
+#define BPF_F_TUNINFO_IPV6		(1ULL << 0)
+
+/* BPF_FUNC_skb_set_tunnel_key flags. */
+#define BPF_F_ZERO_CSUM_TX              (1ULL << 1)
+#define BPF_F_DONT_FRAGMENT             (1ULL << 2)
+
+/* BPF_FUNC_get_stackid flags. */
+#define BPF_F_SKIP_FIELD_MASK		0xffULL
+#define BPF_F_USER_STACK		(1ULL << 8)
+#define BPF_F_FAST_STACK_CMP		(1ULL << 9)
+#define BPF_F_REUSE_STACKID		(1ULL << 10)
+
+/* BPF_FUNC_perf_event_output flags and BPF_FUNC_perf_event_read. */
+#define BPF_F_INDEX_MASK		0xffffffffULL
+#define BPF_F_CURRENT_CPU		BPF_F_INDEX_MASK
+/* BPF_FUNC_perf_event_output for sk_buff input context. */
+#define BPF_F_CTXLEN_MASK		(0xfffffULL << 32)
 
 /* user accessible mirror of in-kernel sk_buff.
  * new fields can only be added to the end of this structure
