@@ -22,7 +22,8 @@ struct bucket {
 struct bpf_htab {
 	struct bpf_map map;
 	struct bucket *buckets;
-	u32 count;	/* number of elements in this hashtable */
+	raw_spinlock_t lock;
+	atomic_t count;	/* number of elements in this hashtable */
 	u32 n_buckets;	/* number of hash buckets */
 	u32 elem_size;	/* size of each element in bytes */
 };
@@ -270,7 +271,7 @@ static int htab_map_update_elem(struct bpf_map *map, void *key, void *value,
 
 	l_old = lookup_elem_raw(head, l_new->hash, key, key_size);
 
-	if (!l_old && unlikely(htab->count >= map->max_entries)) {
+	if (!l_old && unlikely(atomic_read(&htab->count) >= map->max_entries)) {
 		/* if elem with this 'key' doesn't exist and we've reached
 		 * max_entries limit, fail insertion of new elem
 		 */
@@ -334,7 +335,7 @@ static int htab_map_delete_elem(struct bpf_map *map, void *key)
 
 	if (l) {
 		hlist_del_rcu(&l->hash_node);
-		htab->count--;
+		atomic_dec(&htab->count);
 		kfree_rcu(l, rcu);
 		ret = 0;
 	}
@@ -354,7 +355,7 @@ static void delete_all_elements(struct bpf_htab *htab)
 
 		hlist_for_each_entry_safe(l, n, head, hash_node) {
 			hlist_del_rcu(&l->hash_node);
-			htab->count--;
+			atomic_dec(&htab->count);
 			kfree(l);
 		}
 	}
