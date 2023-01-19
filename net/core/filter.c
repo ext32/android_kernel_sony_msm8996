@@ -1417,7 +1417,7 @@ static u64 bpf_skb_store_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 flags)
 	return 0;
 }
 
-const struct bpf_func_proto bpf_skb_store_bytes_proto = {
+static const struct bpf_func_proto bpf_skb_store_bytes_proto = {
 	.func		= bpf_skb_store_bytes,
 	.gpl_only	= false,
 	.ret_type	= RET_INTEGER,
@@ -1448,7 +1448,7 @@ static u64 bpf_skb_load_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
 	return 0;
 }
 
-const struct bpf_func_proto bpf_skb_load_bytes_proto = {
+static const struct bpf_func_proto bpf_skb_load_bytes_proto = {
 	.func		= bpf_skb_load_bytes,
 	.gpl_only	= false,
 	.ret_type	= RET_INTEGER,
@@ -1495,7 +1495,7 @@ static u64 bpf_l3_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 	return 0;
 }
 
-const struct bpf_func_proto bpf_l3_csum_replace_proto = {
+static const struct bpf_func_proto bpf_l3_csum_replace_proto = {
 	.func		= bpf_l3_csum_replace,
 	.gpl_only	= false,
 	.ret_type	= RET_INTEGER,
@@ -1510,10 +1510,12 @@ static u64 bpf_l4_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 {
 	struct sk_buff *skb = (struct sk_buff *) (long) r1;
 	bool is_pseudo = flags & BPF_F_PSEUDO_HDR;
+	bool is_mmzero = flags & BPF_F_MARK_MANGLED_0;
 	int offset = (int) r2;
 	__sum16 sum, *ptr;
 
-	if (unlikely(flags & ~(BPF_F_PSEUDO_HDR | BPF_F_HDR_FIELD_MASK)))
+	if (unlikely(flags & ~(BPF_F_MARK_MANGLED_0 | BPF_F_PSEUDO_HDR |
+			       BPF_F_HDR_FIELD_MASK)))
 		return -EINVAL;
 	if (unlikely((u32) offset > 0xffff))
 		return -EFAULT;
@@ -1524,6 +1526,8 @@ static u64 bpf_l4_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 	ptr = skb_header_pointer(skb, offset, sizeof(sum), &sum);
 	if (unlikely(!ptr))
 		return -EFAULT;
+	if (is_mmzero && !*ptr)
+		return 0;
 
 	switch (flags & BPF_F_HDR_FIELD_MASK) {
 	case 2:
@@ -1536,6 +1540,8 @@ static u64 bpf_l4_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 		return -EINVAL;
 	}
 
+	if (is_mmzero && !*ptr)
+		*ptr = CSUM_MANGLED_0;
 	if (ptr == &sum)
 		/* skb_store_bits guaranteed to not return -EFAULT here */
 		skb_store_bits(skb, offset, ptr, sizeof(sum));
@@ -1543,7 +1549,7 @@ static u64 bpf_l4_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 	return 0;
 }
 
-const struct bpf_func_proto bpf_l4_csum_replace_proto = {
+static const struct bpf_func_proto bpf_l4_csum_replace_proto = {
 	.func		= bpf_l4_csum_replace,
 	.gpl_only	= false,
 	.ret_type	= RET_INTEGER,
@@ -1632,7 +1638,7 @@ int skb_do_redirect(struct sk_buff *skb)
 	return dev_queue_xmit(skb);
 }
 
-const struct bpf_func_proto bpf_redirect_proto = {
+static const struct bpf_func_proto bpf_redirect_proto = {
 	.func           = bpf_redirect,
 	.gpl_only       = false,
 	.ret_type       = RET_INTEGER,
@@ -1823,7 +1829,7 @@ static u64 bpf_skb_set_tunnel_key(u64 r1, u64 r2, u64 size, u64 flags, u64 r5)
 	return 0;
 }
 
-const struct bpf_func_proto bpf_skb_set_tunnel_key_proto = {
+static const struct bpf_func_proto bpf_skb_set_tunnel_key_proto = {
 	.func		= bpf_skb_set_tunnel_key,
 	.gpl_only	= false,
 	.ret_type	= RET_INTEGER,
