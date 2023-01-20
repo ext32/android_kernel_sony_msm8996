@@ -119,10 +119,17 @@ static int bpf_inode_type(const struct inode *inode, enum bpf_type *type)
 	return 0;
 }
 
+static bool bpf_dname_reserved(const struct dentry *dentry)
+{
+	return strchr(dentry->d_name.name, '.');
+}
 
 static int bpf_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	struct inode *inode;
+
+	if (bpf_dname_reserved(dentry))
+		return -EPERM;
 
 	inode = bpf_get_inode(dir->i_sb, dir, mode | S_IFDIR);
 	if (IS_ERR(inode))
@@ -144,6 +151,9 @@ static int bpf_mkobj_ops(struct inode *dir, struct dentry *dentry,
 			 umode_t mode, const struct inode_operations *iops)
 {
 	struct inode *inode;
+
+	if (bpf_dname_reserved(dentry))
+		return -EPERM;
 
 	inode = bpf_get_inode(dir->i_sb, dir, mode | S_IFREG);
 	if (IS_ERR(inode))
@@ -177,21 +187,31 @@ static int bpf_mkobj(struct inode *dir, struct dentry *dentry, umode_t mode,
 	}
 }
 
-static struct dentry *
-bpf_lookup(struct inode *dir, struct dentry *dentry, unsigned flags)
+static int bpf_link(struct dentry *old_dentry, struct inode *dir,
+		    struct dentry *new_dentry)
 {
-	if (strchr(dentry->d_name.name, '.'))
-		return ERR_PTR(-EPERM);
-	return simple_lookup(dir, dentry, flags);
+	if (bpf_dname_reserved(new_dentry))
+		return -EPERM;
+
+	return simple_link(old_dentry, dir, new_dentry);
+}
+
+static int bpf_rename(struct inode *old_dir, struct dentry *old_dentry,
+		      struct inode *new_dir, struct dentry *new_dentry)
+{
+	if (bpf_dname_reserved(new_dentry))
+		return -EPERM;
+
+	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
 }
 
 static const struct inode_operations bpf_dir_iops = {
-	.lookup		= bpf_lookup,
+	.lookup		= simple_lookup,
 	.mknod		= bpf_mkobj,
 	.mkdir		= bpf_mkdir,
 	.rmdir		= simple_rmdir,
-	.rename		= simple_rename,
-	.link		= simple_link,
+	.rename		= bpf_rename,
+	.link		= bpf_link,
 	.unlink		= simple_unlink,
 };
 
