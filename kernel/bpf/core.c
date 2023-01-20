@@ -735,13 +735,8 @@ load_byte:
 }
 
 #else
-static unsigned int __bpf_prog_ret0_warn(void *ctx,
-					 const struct bpf_insn *insn)
+static unsigned int __bpf_prog_ret0(void *ctx, const struct bpf_insn *insn)
 {
-	/* If this handler ever gets executed, then BPF_JIT_ALWAYS_ON
-	 * is not working properly, so warn about it!
-	 */
-	WARN_ON_ONCE(1);
 	return 0;
 }
 #endif
@@ -795,7 +790,7 @@ struct bpf_prog *bpf_prog_select_runtime(struct bpf_prog *fp, int *err)
 #ifndef CONFIG_BPF_JIT_ALWAYS_ON
 	fp->bpf_func = (void *) __bpf_prog_run;
 #else
-	fp->bpf_func = (void *) __bpf_prog_ret0_warn;
+	fp->bpf_func = (void *) __bpf_prog_ret0;
 #endif
 
 	/* eBPF JITs can rewrite the program in case constant
