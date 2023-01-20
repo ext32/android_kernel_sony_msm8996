@@ -785,7 +785,7 @@ static int bpf_check_tail_call(const struct bpf_prog *fp)
  * Try to JIT eBPF program, if JIT is not available, use interpreter.
  * The BPF program will be executed via BPF_PROG_RUN() macro.
  */
-struct bpf_prog *bpf_prog_select_runtime(struct bpf_prog *fp, int *err)
+int bpf_prog_select_runtime(struct bpf_prog *fp)
 {
 #ifndef CONFIG_BPF_JIT_ALWAYS_ON
 	fp->bpf_func = (void *) __bpf_prog_run;
@@ -811,9 +811,7 @@ struct bpf_prog *bpf_prog_select_runtime(struct bpf_prog *fp, int *err)
 	 * with JITed or non JITed program concatenations and not
 	 * all eBPF JITs might immediately support all features.
 	 */
-	*err = bpf_check_tail_call(fp);
-
-	return fp;
+	return bpf_check_tail_call(fp);
 }
 EXPORT_SYMBOL_GPL(bpf_prog_select_runtime);
 
@@ -888,9 +886,8 @@ const struct bpf_func_proto bpf_tail_call_proto = {
 };
 
 /* For classic BPF JITs that don't implement bpf_int_jit_compile(). */
-struct bpf_prog * __weak bpf_int_jit_compile(struct bpf_prog *prog)
+void __weak bpf_int_jit_compile(struct bpf_prog *prog)
 {
-	return prog;
 }
 
 bool __weak bpf_helper_changes_skb_data(void *func)

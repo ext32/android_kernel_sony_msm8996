@@ -743,7 +743,7 @@ void bpf_jit_compile(struct bpf_prog *prog)
 	/* Nothing to do here. We support Internal BPF. */
 }
 
-struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *prog)
+void bpf_int_jit_compile(struct bpf_prog *prog)
 {
 	struct bpf_binary_header *header;
 	struct jit_ctx ctx;
@@ -751,7 +751,7 @@ struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *prog)
 	u8 *image_ptr;
 
 	if (!bpf_jit_enable)
-		return prog;
+		return;
 
 	if (!prog || !prog->len)
 		return;
@@ -761,7 +761,7 @@ struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *prog)
 
 	ctx.offset = kcalloc(prog->len, sizeof(int), GFP_KERNEL);
 	if (ctx.offset == NULL)
-		return prog;
+		return;
 
 	/* 1. Initial fake pass to compute ctx->idx. */
 
@@ -806,7 +806,6 @@ struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *prog)
 	prog->jited = 1;
 out:
 	kfree(ctx.offset);
-	return prog;
 }
 
 void bpf_jit_free(struct bpf_prog *prog)

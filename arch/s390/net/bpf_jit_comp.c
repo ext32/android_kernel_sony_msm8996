@@ -1329,19 +1329,18 @@ void bpf_jit_compile(struct bpf_prog *fp)
 /*
  * Compile eBPF program "fp"
  */
-struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *fp)
+void bpf_int_jit_compile(struct bpf_prog *fp)
 {
 	struct bpf_binary_header *header;
 	struct bpf_jit jit;
 	int pass;
 
 	if (!bpf_jit_enable)
-		return fp;
-
+		return;
 	memset(&jit, 0, sizeof(jit));
 	jit.addrs = kcalloc(fp->len + 1, sizeof(*jit.addrs), GFP_KERNEL);
 	if (jit.addrs == NULL)
-		return fp;
+		return;
 	/*
 	 * Three initial passes:
 	 *   - 1/2: Determine clobbered registers
@@ -1373,7 +1372,6 @@ struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *fp)
 	}
 free_addrs:
 	kfree(jit.addrs);
-	return fp;
 }
 
 /*
