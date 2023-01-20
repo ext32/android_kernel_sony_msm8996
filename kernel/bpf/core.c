@@ -884,11 +884,6 @@ const struct bpf_func_proto * __weak bpf_get_trace_printk_proto(void)
 	return NULL;
 }
 
-const struct bpf_func_proto * __weak bpf_get_event_output_proto(void)
-{
-	return NULL;
-}
-
 /* Always built-in helper functions. */
 const struct bpf_func_proto bpf_tail_call_proto = {
 	.func		= NULL,
