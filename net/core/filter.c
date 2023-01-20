@@ -1348,7 +1348,7 @@ int sk_reuseport_attach_bpf(u32 ufd, struct sock *sk)
 	return 0;
 }
 
-#define BPF_LDST_LEN 16U
+#define BPF_RECOMPUTE_CSUM(flags)	((flags) & 1)
 struct bpf_scratchpad {
 	union {
 		__be32 diff[MAX_BPF_STACK / sizeof(__be32)];
@@ -1380,11 +1380,7 @@ static u64 bpf_skb_store_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 flags)
 	int offset = (int) r2;
 	void *from = (void *) (long) r3;
 	unsigned int len = (unsigned int) r4;
-	char buf[BPF_LDST_LEN];
 	void *ptr;
-
-	if (unlikely(flags & ~(BPF_F_RECOMPUTE_CSUM)))
-		return -EINVAL;
 
 	/* bpf verifier guarantees that:
 	 * 'from' pointer points to bpf program stack
@@ -1403,7 +1399,7 @@ static u64 bpf_skb_store_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 flags)
 	if (unlikely(!ptr))
 		return -EFAULT;
 
-	if (flags & BPF_F_RECOMPUTE_CSUM)
+	if (BPF_RECOMPUTE_CSUM(flags))
 		skb_postpull_rcsum(skb, ptr, len);
 
 	memcpy(ptr, from, len);
@@ -1412,7 +1408,7 @@ static u64 bpf_skb_store_bytes(u64 r1, u64 r2, u64 r3, u64 r4, u64 flags)
 		/* skb_store_bits cannot return -EFAULT here */
 		skb_store_bits(skb, offset, ptr, len);
 
-	if (flags && BPF_F_RECOMPUTE_CSUM && skb->ip_summed == CHECKSUM_COMPLETE)
+	if (BPF_RECOMPUTE_CSUM(flags) && skb->ip_summed == CHECKSUM_COMPLETE)
 		skb->csum = csum_add(skb->csum, csum_partial(ptr, len, 0));
 	return 0;
 }
@@ -1458,6 +1454,8 @@ const struct bpf_func_proto bpf_skb_load_bytes_proto = {
 	.arg4_type	= ARG_CONST_STACK_SIZE,
 };
 
+#define BPF_HEADER_FIELD_SIZE(flags)	((flags) & 0x0f)
+#define BPF_IS_PSEUDO_HEADER(flags)	((flags) & 0x10)
 
 static u64 bpf_l3_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 {
@@ -1465,8 +1463,6 @@ static u64 bpf_l3_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 	int offset = (int) r2;
 	__sum16 sum, *ptr;
 
-	if (unlikely(flags & ~(BPF_F_HDR_FIELD_MASK)))
-		return -EINVAL;
 	if (unlikely((u32) offset > 0xffff))
 		return -EFAULT;
 
@@ -1477,7 +1473,7 @@ static u64 bpf_l3_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 	if (unlikely(!ptr))
 		return -EFAULT;
 
-	switch (flags & BPF_F_HDR_FIELD_MASK) {
+	switch (BPF_HEADER_FIELD_SIZE(flags)) {
 	case 2:
 		csum_replace2(ptr, from, to);
 		break;
@@ -1509,12 +1505,10 @@ const struct bpf_func_proto bpf_l3_csum_replace_proto = {
 static u64 bpf_l4_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 {
 	struct sk_buff *skb = (struct sk_buff *) (long) r1;
-	bool is_pseudo = flags & BPF_F_PSEUDO_HDR;
+	bool is_pseudo = !!BPF_IS_PSEUDO_HEADER(flags);
 	int offset = (int) r2;
 	__sum16 sum, *ptr;
 
-	if (unlikely(flags & ~(BPF_F_PSEUDO_HDR | BPF_F_HDR_FIELD_MASK)))
-		return -EINVAL;
 	if (unlikely((u32) offset > 0xffff))
 		return -EFAULT;
 
@@ -1525,7 +1519,7 @@ static u64 bpf_l4_csum_replace(u64 r1, u64 r2, u64 from, u64 to, u64 flags)
 	if (unlikely(!ptr))
 		return -EFAULT;
 
-	switch (flags & BPF_F_HDR_FIELD_MASK) {
+	switch (BPF_HEADER_FIELD_SIZE(flags)) {
 	case 2:
 		inet_proto_csum_replace2(ptr, skb, from, to, is_pseudo);
 		break;
@@ -1554,13 +1548,12 @@ const struct bpf_func_proto bpf_l4_csum_replace_proto = {
 	.arg5_type	= ARG_ANYTHING,
 };
 
+#define BPF_IS_REDIRECT_INGRESS(flags)	((flags) & 1)
+
 static u64 bpf_clone_redirect(u64 r1, u64 ifindex, u64 flags, u64 r4, u64 r5)
 {
 	struct sk_buff *skb = (struct sk_buff *) (long) r1, *skb2;
 	struct net_device *dev;
-
-	if (unlikely(flags & ~(BPF_F_INGRESS)))
-		return -EINVAL;
 
 	dev = dev_get_by_index_rcu(dev_net(skb->dev), ifindex);
 	if (unlikely(!dev))
@@ -1570,7 +1563,7 @@ static u64 bpf_clone_redirect(u64 r1, u64 ifindex, u64 flags, u64 r4, u64 r5)
 	if (unlikely(!skb2))
 		return -ENOMEM;
 
-	if (flags & BPF_F_INGRESS) {
+	if (BPF_IS_REDIRECT_INGRESS(flags))
 		return dev_forward_skb(dev, skb2);
 
 	skb2->dev = dev;
@@ -1597,9 +1590,6 @@ static u64 bpf_redirect(u64 ifindex, u64 flags, u64 r3, u64 r4, u64 r5)
 {
 	struct redirect_info *ri = this_cpu_ptr(&redirect_info);
 
-	if (unlikely(flags & ~(BPF_F_INGRESS)))
-		return TC_ACT_SHOT;
-
 	ri->ifindex = ifindex;
 	ri->flags = flags;
 	return TC_ACT_REDIRECT;
@@ -1617,7 +1607,7 @@ int skb_do_redirect(struct sk_buff *skb)
 		return -EINVAL;
 	}
 
-	if (ri->flags & BPF_F_INGRESS) {
+	if (BPF_IS_REDIRECT_INGRESS(ri->flags))
 		return dev_forward_skb(dev, skb);
 
 	skb->dev = dev;
