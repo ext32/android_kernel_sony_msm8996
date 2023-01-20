@@ -536,7 +536,7 @@ select_insn:
 		tail_call_cnt++;
 
 		prog = READ_ONCE(array->ptrs[index]);
-		if (!prog)
+		if (unlikely(!prog))
 			goto out;
 
 		/* ARG1 at this point is guaranteed to point to CTX from
