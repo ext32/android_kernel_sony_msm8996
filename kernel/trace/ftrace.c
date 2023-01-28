@@ -2635,6 +2635,7 @@ static int ftrace_startup(struct ftrace_ops *ops, int command)
 
 	ftrace_startup_enable(command);
 
+
 	/*
 	 * If ftrace is in an undefined state, we just remove ops from list
 	 * to prevent the NULL pointer, instead of totally rolling it back and
@@ -2952,7 +2953,7 @@ static int ftrace_allocate_records(struct ftrace_page *pg, int count)
 		/* if we can't allocate this size, try something smaller */
 		if (!order)
 			return -ENOMEM;
-		order >>= 1;
+		order--;
 		goto again;
 	}
 
