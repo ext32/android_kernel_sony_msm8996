@@ -22,11 +22,6 @@
  *      device reopen.
  *
  */
-/*
- * NOTE: This file has been modified by Sony Mobile Communications Inc.
- * Modifications are Copyright (c) 2018 Sony Mobile Communications Inc,
- * and licensed under the license of the file.
- */
 
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -3152,7 +3147,6 @@ int snd_soc_dapm_put_volsw(struct snd_kcontrol *kcontrol,
 			update.val = val;
 			card->update = &update;
 		}
-		change |= reg_change;
 
 		ret = soc_dapm_mixer_update_power(card, kcontrol, connect);
 
@@ -3257,7 +3251,6 @@ int snd_soc_dapm_put_enum_double(struct snd_kcontrol *kcontrol,
 			update.val = val;
 			card->update = &update;
 		}
-		change |= reg_change;
 
 		ret = soc_dapm_mux_update_power(card, kcontrol, item[0], e);
 
