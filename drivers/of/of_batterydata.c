@@ -353,22 +353,6 @@ struct device_node *of_batterydata_get_best_profile(
 			if (rc)
 				continue;
 			for (i = 0; i < batt_ids.num; i++) {
-<<<<<<< HEAD
-#ifdef SUPPORT_LENUK_BATTERY_ID_ALGO
-				if (((batt_id_kohm >= 1) && (batt_id_kohm < 20) && (batt_ids.kohm[i] == 9))
-						||  ((batt_id_kohm >= 20) && (batt_id_kohm < 80) && (batt_ids.kohm[i] == 50))
-						||  ((batt_id_kohm >= 80) && (batt_id_kohm < 120) && (batt_ids.kohm[i] == 100))) {
-					best_node = node;
-					best_id_kohm = batt_ids.kohm[i];
-					in_range = false;
-					limit = 0;
-					best_delta = 0;
-					delta = 0;
-					break;
-				}
-#else
-=======
->>>>>>> parent of 03b2c770...  of: batterydata: Fix batterydata not being read properly
 				delta = abs(batt_ids.kohm[i] - batt_id_kohm);
 				limit = (batt_ids.kohm[i] * id_range_pct) / 100;
 				in_range = (delta <= limit);
@@ -442,19 +426,6 @@ int of_batterydata_read_data(struct device_node *batterydata_container_node,
 		if (rc)
 			continue;
 		for (i = 0; i < batt_ids.num; i++) {
-<<<<<<< HEAD
-#ifdef SUPPORT_LENUK_BATTERY_ID_ALGO
-			if (((batt_id_kohm >= 1) && (batt_id_kohm < 20) && (batt_ids.kohm[i] == 9))
-					||  ((batt_id_kohm >= 20) && (batt_id_kohm < 80) && (batt_ids.kohm[i] == 50))
-					||  ((batt_id_kohm >= 80) && (batt_id_kohm < 120) && (batt_ids.kohm[i] == 100))) {
-				best_node = node;
-				best_id_kohm = batt_ids.kohm[i];
-				delta = 0;
-				break;
-			}
-#else
-=======
->>>>>>> parent of 03b2c770...  of: batterydata: Fix batterydata not being read properly
 			delta = abs(batt_ids.kohm[i] - batt_id_kohm);
 			if (delta < best_delta || !best_node) {
 				best_node = node;
