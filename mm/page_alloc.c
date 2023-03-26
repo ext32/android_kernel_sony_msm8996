@@ -3159,6 +3159,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	enum migrate_mode migration_mode = MIGRATE_ASYNC;
 	bool deferred_compaction = false;
 	int contended_compaction = COMPACT_CONTENDED_NONE;
+	bool woke_kswapd = false;
 	bool used_vmpressure = false;
 
 	/*
@@ -3190,6 +3191,10 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 
 retry:
 	if (gfp_mask & __GFP_KSWAPD_RECLAIM) {
+		if (!woke_kswapd) {
+			atomic_long_inc(&kswapd_waiters);
+			woke_kswapd = true;
+		}
 		if (!used_vmpressure) {
 			used_vmpressure = vmpressure_inc_users(order);
 		}
@@ -3345,8 +3350,11 @@ noretry:
 	if (page)
 		goto got_pg;
 nopage:
-	warn_alloc_failed(gfp_mask, order, NULL);
 got_pg:
+	if (woke_kswapd)
+		atomic_long_dec(&kswapd_waiters);
+	if (!page)
+		warn_alloc_failed(gfp_mask, order, NULL);
 	if (used_vmpressure)
 		vmpressure_dec_users();
 	return page;
