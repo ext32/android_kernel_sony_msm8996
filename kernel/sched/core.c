@@ -685,7 +685,8 @@ void wake_q_add(struct wake_q_head *head, struct task_struct *task)
 	 * This cmpxchg() implies a full barrier, which pairs with the write
 	 * barrier implied by the wakeup in wake_up_list().
 	 */
-	if (cmpxchg(&node->next, NULL, WAKE_Q_TAIL))
+	smp_mb__before_atomic();
+	if (cmpxchg_relaxed(&node->next, NULL, WAKE_Q_TAIL))
 		return;
 
 	head->count++;
