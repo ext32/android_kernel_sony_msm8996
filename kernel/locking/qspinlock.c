@@ -310,7 +310,7 @@ void queued_spin_unlock_wait(struct qspinlock *lock)
 		cpu_relax();
 
 done:
-	smp_rmb(); /* CTRL + RMB -> ACQUIRE */
+	smp_acquire__after_ctrl_dep();
 }
 EXPORT_SYMBOL(queued_spin_unlock_wait);
 #endif
@@ -402,9 +402,7 @@ void queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 * sequentiality; this is because not all clear_pending_set_locked()
 	 * implementations imply full barriers.
 	 */
-	while ((val = smp_load_acquire(&lock->val.counter)) & _Q_LOCKED_MASK)
-		cpu_relax();
-
+	smp_cond_load_acquire(&lock->val.counter, !(VAL & _Q_LOCKED_MASK));
 	/*
 	 * take ownership and clear the pending bit.
 	 *
@@ -476,7 +474,7 @@ queue:
 	 *
 	 */
 	pv_wait_head(lock, node);
-	smp_cond_acquire(!((val = atomic_read(&lock->val)) & _Q_LOCKED_PENDING_MASK));
+	val = smp_cond_load_acquire(&lock->val.counter, !(VAL & _Q_LOCKED_PENDING_MASK));
 
 	/*
 	 * claim the lock:
