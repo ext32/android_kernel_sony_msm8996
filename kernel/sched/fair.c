@@ -12059,9 +12059,6 @@ int alloc_fair_sched_group(struct task_group *tg, struct task_group *parent)
 		init_tg_cfs_entry(tg, cfs_rq, se, i, parent->se[i]);
 		init_entity_runnable_average(se);
 
-		raw_spin_lock_irq(&rq->lock);
-		post_init_entity_util_avg(se);
-		raw_spin_unlock_irq(&rq->lock);
 	}
 
 	return 1;
@@ -12070,6 +12067,22 @@ err_free_rq:
 	kfree(cfs_rq);
 err:
 	return 0;
+}
+
+void online_fair_sched_group(struct task_group *tg)
+{
+	struct sched_entity *se;
+	struct rq *rq;
+	int i;
+
+	for_each_possible_cpu(i) {
+		rq = cpu_rq(i);
+		se = tg->se[i];
+
+		raw_spin_lock_irq(&rq->lock);
+		post_init_entity_util_avg(se);
+		raw_spin_unlock_irq(&rq->lock);
+	}
 }
 
 void unregister_fair_sched_group(struct task_group *tg)
@@ -12177,6 +12190,8 @@ int alloc_fair_sched_group(struct task_group *tg, struct task_group *parent)
 {
 	return 1;
 }
+
+void online_fair_sched_group(struct task_group *tg) { }
 
 void unregister_fair_sched_group(struct task_group *tg) { }
 
