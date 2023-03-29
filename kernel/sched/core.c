@@ -8523,11 +8523,14 @@ void __init sched_init_smp(void)
 
 	init_sched_rt_class();
 	init_sched_dl_class();
+
+	sched_clock_init_late();
 }
 #else
 void __init sched_init_smp(void)
 {
 	sched_init_granularity();
+	sched_clock_init_late();
 }
 #endif /* CONFIG_SMP */
 
@@ -8561,6 +8564,7 @@ void __init sched_init(void)
 
 	BUG_ON(num_possible_cpus() > BITS_PER_LONG);
 
+	sched_clock_init();
 	sched_boost_parse_dt();
 	init_clusters();
 
