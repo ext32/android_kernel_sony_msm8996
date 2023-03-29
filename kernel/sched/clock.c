@@ -84,7 +84,7 @@ void sched_clock_init(void)
 
 #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
 static struct static_key __sched_clock_stable = STATIC_KEY_INIT;
-static int __sched_clock_stable_early;
+static int __sched_clock_stable_early = 1;
 
 int sched_clock_stable(void)
 {
@@ -95,25 +95,6 @@ static void __set_sched_clock_stable(void)
 {
 	if (!sched_clock_stable())
 		static_key_slow_inc(&__sched_clock_stable);
-}
-
-void set_sched_clock_stable(void)
-{
-	__sched_clock_stable_early = 1;
-
-	smp_mb(); /* matches sched_clock_init_late() */
-
-	/*
-	 * This really should only be called early (before
-	 * sched_clock_init_late()) when guestimating our sched_clock() is
-	 * solid.
-	 *
-	 * After that we test stability and we can negate our guess using
-	 * clear_sched_clock_stable, possibly from a watchdog.
-	 */
-	if (WARN_ON_ONCE(sched_clock_running == 2))
-		__set_sched_clock_stable();
-
 }
 
 static void __clear_sched_clock_stable(struct work_struct *work)
@@ -175,9 +156,6 @@ static int __init sched_clock_init_late(void)
 		__set_sched_clock_stable();
 
 	return 0;
-
-	else
-		__clear_sched_clock_stable(NULL);
 }
 
 late_initcall(sched_clock_init_late);

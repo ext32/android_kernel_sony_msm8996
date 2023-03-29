@@ -2728,7 +2728,6 @@ static inline void sched_clock_idle_wakeup_event(u64 delta_ns)
  * is reliable after all:
  */
 extern int sched_clock_stable(void);
-extern void set_sched_clock_stable(void);
 extern void clear_sched_clock_stable(void);
 
 extern void sched_clock_tick(void);
