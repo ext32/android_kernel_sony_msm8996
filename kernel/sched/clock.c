@@ -91,7 +91,14 @@ int sched_clock_stable(void)
 	return static_key_false(&__sched_clock_stable);
 }
 
-static void __set_sched_clock_stable(void)
+static void __sched_clock_work(struct work_struct *work)
+{
+	static_branch_disable(&__sched_clock_stable);
+}
+
+static DECLARE_WORK(sched_clock_work, __sched_clock_work);
+
+static void __clear_sched_clock_stable(void)
 {
 	if (!sched_clock_stable())
 		static_key_slow_inc(&__sched_clock_stable);
@@ -99,12 +106,27 @@ static void __set_sched_clock_stable(void)
 
 static void __clear_sched_clock_stable(struct work_struct *work)
 {
-	/* XXX worry about clock continuity */
-	if (sched_clock_stable())
-		static_key_slow_dec(&__sched_clock_stable);
-}
+	struct sched_clock_data *scd = this_scd();
 
-static DECLARE_WORK(sched_clock_work, __clear_sched_clock_stable);
+	/*
+	 * Attempt to make the stable->unstable transition continuous.
+	 *
+	 * Trouble is, this is typically called from the TSC watchdog
+	 * timer, which is late per definition. This means the tick
+	 * values can already be screwy.
+	 *
+	 * Still do what we can.
+	 */
+	gtod_offset = (scd->tick_raw + raw_offset) - (scd->tick_gtod);
+	printk(KERN_INFO "sched_clock: Marking unstable (%lld, %lld)<-(%lld, %lld)\n",
+			scd->tick_gtod, gtod_offset,
+			scd->tick_raw,  raw_offset);
+
+	tick_dep_set(TICK_DEP_BIT_CLOCK_UNSTABLE);
+
+	if (sched_clock_stable())
+		schedule_work(&sched_clock_work);
+}
 
 void clear_sched_clock_stable(void)
 {
