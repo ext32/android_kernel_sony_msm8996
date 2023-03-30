@@ -603,6 +603,19 @@ struct mdss_dsi_ctrl_pdata {
 #ifdef CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL
 	struct mdss_panel_specific_pdata *spec_pdata;
 #endif /* CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL */
+
+	struct notifier_block wake_notif;
+	struct task_struct *wake_thread;
+	struct completion wake_comp;
+	wait_queue_head_t wake_waitq;
+	atomic_t disp_en;
+};
+
+
+enum {
+	MDSS_DISPLAY_OFF,
+	MDSS_DISPLAY_WAKING,
+	MDSS_DISPLAY_ON
 };
 
 struct dsi_status_data {
