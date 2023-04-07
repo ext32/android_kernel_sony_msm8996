@@ -85,3 +85,33 @@ SCHED_FEAT(ENERGY_AWARE, true)
 #else
 SCHED_FEAT(ENERGY_AWARE, false)
 #endif
+
+/*
+ * Minimum capacity capping. Keep track of minimum capacity factor when
+ * minimum frequency available to a policy is modified.
+ * If enabled, this can be used to inform the scheduler about capacity
+ * restrictions.
+ */
+#define SCHED_FEAT_MIN_CAPACITY_CAPPING 0
+/*
+ * Enforce the priority of candidates selected by find_best_target()
+ * ON: If the target CPU saves any energy, use that.
+ * OFF: Use whichever of target or backup saves most.
+ */
+#define SCHED_FEAT_FBT_STRICT_ORDER 0
+/*
+ * Apply schedtune boost hold to tasks of all sched classes.
+ * If enabled, schedtune will hold the boost applied to a CPU
+ * for 50ms regardless of task activation - if the task is
+ * still running 50ms later, the boost hold expires and schedtune
+ * boost will expire immediately the task stops.
+ * If disabled, this behaviour will only apply to tasks of the
+ * RT class.
+ */
+#define SCHED_FEAT_SCHEDTUNE_BOOST_HOLD_ALL 1
+/*
+ * UtilEstimation. Use estimated CPU utilization.
+ */
+#define SCHED_FEAT_UTIL_EST 1
+
+#define SCHED_FEAT_WA_IDLE 1
