@@ -7673,7 +7673,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 		for_each_cpu_and(i, tsk_cpus_allowed(p), sched_group_cpus(sg)) {
 			unsigned long capacity_curr = capacity_curr_of(i);
 			unsigned long capacity_orig = capacity_orig_of(i);
-			unsigned long wake_util, new_util;
+			unsigned long wake_util, new_util, min_capped_util;
 
 			if (!cpu_online(i))
 				continue;
@@ -7828,7 +7828,8 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 				 * IOW, prefer a deep IDLE LITTLE CPU vs a
 				 * shallow idle big CPU.
 				 */
-				if (sysctl_sched_cstate_aware &&
+				if (capacity_orig == target_capacity &&
+				    sysctl_sched_cstate_aware &&
 				    best_idle_cstate <= idle_idx)
 					continue;
 
@@ -7860,7 +7861,8 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			 */
 
 			/* Favor CPUs with maximum spare capacity */
-			if ((capacity_orig - new_util) < target_max_spare_cap)
+			if (capacity_orig == target_capacity &&
+			    (capacity_orig - min_capped_util) < target_max_spare_cap)
 				continue;
 
 			target_max_spare_cap = capacity_orig - new_util;
