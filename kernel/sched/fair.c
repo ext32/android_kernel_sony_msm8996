@@ -2593,12 +2593,15 @@ static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)
 static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)
 {
 }
+
+#ifdef CONFIG_SMP
 static inline bool numa_wake_affine(struct sched_domain *sd,
 				    struct task_struct *p, int this_cpu,
 				    int prev_cpu, int sync)
 {
 	return true;
 }
+#endif /* !SMP */
 #endif /* CONFIG_NUMA_BALANCING */
 
 static void
