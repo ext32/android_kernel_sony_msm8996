@@ -748,6 +748,7 @@ kgsl_sharedmem_page_alloc_user(struct kgsl_memdesc *memdesc,
 	 */
 	if (!(memdesc->flags & KGSL_MEMFLAGS_SECURE))
 		atomic_long_add(size, &kgsl_driver.stats.page_alloc_pending);
+
 	memdesc->pages = kgsl_malloc(len_alloc * sizeof(struct page *));
 
 	if (memdesc->pages == NULL) {
@@ -852,6 +853,7 @@ kgsl_sharedmem_page_alloc_user(struct kgsl_memdesc *memdesc,
 done:
 	if (!(memdesc->flags & KGSL_MEMFLAGS_SECURE))
 		atomic_long_sub(size, &kgsl_driver.stats.page_alloc_pending);
+
 	if (ret) {
 		if (memdesc->pages) {
 			unsigned int count = 1;
