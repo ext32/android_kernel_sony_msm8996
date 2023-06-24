@@ -846,9 +846,6 @@ srtuct bpf_int_jit_compile(struct bpf_prog *prog)
 		prog = tmp;
 	}
 
-	if (!prog || !prog->len)
-		return;
-
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.prog = prog;
 
