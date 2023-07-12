@@ -3111,7 +3111,7 @@ static int packet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len
 		return -EINVAL;
 
 	return packet_do_bind(sk, NULL, sll->sll_ifindex,
-			      sll->sll_protocol ? : pkt_sk(sk)->num);
+			      sll->sll_protocol ? : READ_ONCE(pkt_sk(sk)->num));
 }
 
 static struct proto packet_proto = {
