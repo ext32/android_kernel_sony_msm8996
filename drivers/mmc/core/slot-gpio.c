@@ -26,13 +26,13 @@ struct mmc_gpio {
 	struct gpio_desc *cd_gpio;
 	bool override_ro_active_level;
 	bool override_cd_active_level;
-	irqreturn_t (*cd_gpio_isr)(int irq, void *dev_id);
 	bool status;
-	int uim2_gpio;
 #ifdef CONFIG_MMC_SD_DEFERRED_RESUME
 	bool pending_detect;
 	bool suspended;
 #endif
+	irqreturn_t (*cd_gpio_isr)(int irq, void *dev_id);
+	int uim2_gpio;
 	char *ro_label;
 	char cd_label[0];
 };
