@@ -1,4 +1,4 @@
-'/*
+/*
  * Alarmtimer interface
  *
  * This interface provides a timer which is similarto hrtimers,
