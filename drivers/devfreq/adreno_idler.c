@@ -40,7 +40,7 @@
 /* stats.busy_time threshold for determining if the given workload is idle.
    Any workload higher than this will be treated as non-idle workload,
    meaning the higher it gets, the slower & low-power it would get. */
-static unsigned long idleworkload = 5000;
+static unsigned long idleworkload = 8000;
 module_param_named(adreno_idler_idleworkload, idleworkload, ulong, 0664);
 
 /* Numbers to wait before entering idle.
@@ -48,11 +48,11 @@ module_param_named(adreno_idler_idleworkload, idleworkload, ulong, 0664);
    down the frequency.
    This implementation is to prevent micro-lags on scrolling or playing games,
    meaning the lower it gets, the slower & low-power it would get. */
-static unsigned int idlewait = 15;
+static unsigned int idlewait = 5;
 module_param_named(adreno_idler_idlewait, idlewait, uint, 0664);
 
 /* Taken from ondemand */
-static unsigned int downdifferential = 20;
+static unsigned int downdifferential = 25;
 module_param_named(adreno_idler_downdifferential, downdifferential, uint, 0664);
 
 /* Master switch to activate whole routine */
