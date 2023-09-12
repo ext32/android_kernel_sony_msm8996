@@ -5172,6 +5172,9 @@ static int fg_parse_dt(struct fg_chip *chip)
 				rc);
 	}
 
+	chip->dt.jeita_thresholds[JEITA_WARM] = 90;
+	chip->dt.jeita_thresholds[JEITA_HOT] = 90;
+
 	if (of_property_count_elems_of_size(node,
 		"qcom,battery-thermal-coefficients",
 		sizeof(u8)) == BATT_THERM_NUM_COEFFS) {
