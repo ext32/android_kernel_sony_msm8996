@@ -7163,7 +7163,7 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
 	return cpu != -1 && cpumask_test_cpu(cpu, sched_group_cpus(sg));
 }
 
-*static inline unsigned long task_util(struct task_struct *p)
+/*static inline unsigned long task_util(struct task_struct *p)
 {
 #ifdef CONFIG_SCHED_WALT
 	if (!walt_disabled && sysctl_sched_use_walt_cpu_util) {
@@ -7173,6 +7173,7 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
 #endif
 	return p->se.avg.util_avg;
 }
+*/
 /*
 /*
  * select_energy_cpu_idx(): estimate the energy impact of changing the
@@ -7400,7 +7401,7 @@ schedtune_cpu_margin(unsigned long util, int cpu)
 }
 
 static inline long
-schedtune_task_margin(struct task_struct *task)
+schedtune_task_margin(struct task_struct *p)
 {
 	int boost = schedtune_task_boost(p);
 	unsigned long util;
