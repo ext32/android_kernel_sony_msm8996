@@ -8,8 +8,7 @@ static char new_command_line[COMMAND_LINE_SIZE];
 
 static int cmdline_proc_show(struct seq_file *m, void *v)
 {
-	seq_puts(m, saved_command_line);
-	seq_putc(m, '\n');
+	seq_printf(m, "%s\n", new_command_line);
 	return 0;
 }
 
@@ -25,11 +24,52 @@ static const struct file_operations cmdline_proc_fops = {
 	.release	= single_release,
 };
 
+static void patch_flag(char *cmd, const char *flag, const char *val)
+{
+	size_t flag_len, val_len;
+	char *start, *end;
+
+	start = strstr(cmd, flag);
+	if (!start)
+		return;
+
+	flag_len = strlen(flag);
+	val_len = strlen(val);
+	end = start + flag_len + strcspn(start + flag_len, " ");
+	memmove(start + flag_len + val_len, end, strlen(end) + 1);
+	memcpy(start + flag_len, val, val_len);
+}
+
+static void patch_safetynet_flags(char *cmd)
+{
+	patch_flag(cmd, "androidboot.flash.locked=", "1");
+	patch_flag(cmd, "androidboot.verifiedbootstate=", "green");
+	patch_flag(cmd, "androidboot.veritymode=", "enforcing");
+	patch_flag(cmd, "androidboot.vbmeta.device_state=", "locked");
+}
+
+
+static bool in_recovery;
+
+static int __init boot_mode_setup(char *value)
+{
+	in_recovery = !strcmp(value, "recovery");
+	return 1;
+}
+__setup("androidboot.mode=", boot_mode_setup);
+
 static int __init proc_cmdline_init(void)
 {
 	char *offset_addr, *cmd = new_command_line;
 
 	strcpy(cmd, saved_command_line);
+
+	/*
+	 * Patch various flags from command line seen by userspace in order to
+	 * pass SafetyNet checks.
+	 */
+	if (!in_recovery)
+		patch_safetynet_flags(new_command_line);
 
 	offset_addr = strstr(cmd, "androidboot.mode=usb_chg");
 	if (offset_addr) {
